@@ -1,0 +1,57 @@
+# ------------------------------------------------------------
+# Address pools
+# ------------------------------------------------------------
+address_pools:
+  pool1:
+    shuffle: false
+    ipv4:
+      - 10.0.0.0/24
+
+# ------------------------------------------------------------
+# Reply definitions
+# ------------------------------------------------------------
+reply_definitions:
+  auth:
+    ok:
+      code: 2   # Access-Accept
+      attributes:
+        Reply-Message: "OK"
+        Framed-IP-Address: "-> fromPool"
+
+  acct:
+    acct_ok:
+      code: 5   # Accounting-Response
+      attributes: {}
+
+# ------------------------------------------------------------
+# Pool match rules (first match wins)
+# ------------------------------------------------------------
+pool_match_rules:
+  - pool1:
+      - User-Name: "alice"
+
+# ------------------------------------------------------------
+# Reply match rules
+# ------------------------------------------------------------
+reply_match_rules:
+  auth:
+    - ok:
+        - User-Name: "alice"
+
+  acct:
+    - acct_ok:
+        - User-Name: "alice"
+
+# ------------------------------------------------------------
+# Redis dialog storage
+# ------------------------------------------------------------
+redis_storage:
+  prefix: "tE4.radiusServer."
+  auth:
+    - User-Name
+  acct:
+    - User-Name
+  coa:
+    - User-Name
+  disc:
+    - User-Name

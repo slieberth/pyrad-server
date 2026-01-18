@@ -11,6 +11,10 @@ requires-python = ">=3.11"
 license = { file = "LICENSE.rst" }
 authors = [{ name = "Stefan" }]
 dependencies = [
+  "orjson",
+  "pyrad",
+  "pydantic>=2.12",
+  "redis>=4.5",
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
   ]
