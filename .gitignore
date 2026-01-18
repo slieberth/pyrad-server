@@ -1,0 +1,89 @@
+# =========================
+# Python / Virtual Envs
+# =========================
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# Build / Packaging
+# =========================
+build/
+dist/
+.eggs/
+*.egg-info/
+pip-wheel-metadata/
+wheelhouse/
+
+# =========================
+# Test / Coverage
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+test-results.xml
+
+# =========================
+# Type checking / Linting
+# =========================
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+
+# =========================
+# IDEs / Editors
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# OS-specific
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Runtime / App artifacts
+# =========================
+*.pid
+*.sock
+
+# =========================
+# FastAPI / Uvicorn
+# =========================
+uvicorn.log
+
+# =========================
+# Local config / secrets
+# =========================
+*.env
+.env.*
+conf/*.local.yml
+conf/*.local.yaml
+conf/*.local.json
+
+# =========================
+# Temporary / Backup files
+# =========================
+*.swp
+*.swo
+*~
+*.bak

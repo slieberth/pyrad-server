@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyrad-server"
+version = "0.1.0"
+description = "RADIUS server derived from pyrad-pfs"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE.rst" }
+authors = [{ name = "Stefan" }]
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  ]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-cov",
+  "ruff>=0.6",
+  "mypy>=1.10",
+  "pre-commit",
+  "types-PyYAML",
+]
+
+[project.scripts]
+pyrad-server = "pyrad_server.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
