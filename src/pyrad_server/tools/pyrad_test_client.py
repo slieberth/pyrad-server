@@ -14,12 +14,13 @@ from pyrad.client import Timeout as PyradTimeoutError
 from pyrad.dictionary import Dictionary as PyradDictionary
 from pyrad.packet import AccessAccept, AccessReject, AccountingResponse
 
-LOG = logging.getLogger("pyrad_test_client")
+LOG = logging.getLogger("pyrad_server.test_client")
 
 
 # -------------------------------
 # Commands (PEP8 python names)
 # -------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class AuthCommand:
@@ -65,6 +66,7 @@ class AcctCommand:
 # Errors
 # -------------------------------
 
+
 class RadiusClientError(RuntimeError):
     pass
 
@@ -77,11 +79,13 @@ class RadiusNoReplyError(RadiusClientError):
 # Client
 # -------------------------------
 
+
 class RadiusTestClient:
     """Lab/test RADIUS client around pyrad.
 
     - Only PEP8 commands (AuthCommand / AcctCommand)
     - Auth reply addresses are remembered and may be injected into acct.
+    - Debug mode logs request/reply details (sanitized) and RTT.
     """
 
     def __init__(
@@ -95,8 +99,10 @@ class RadiusTestClient:
         timeout: float = 2.0,
         retries: int = 1,
         logger: logging.Logger | None = None,
+        debug: bool = False,
     ) -> None:
         self.logger = logger or LOG
+        self.debug = debug
 
         dict_path = Path(dictionary_path)
         if not dict_path.exists():
@@ -124,15 +130,35 @@ class RadiusTestClient:
         self.last_framed_ipv6_prefix: str | None = None
         self.last_delegated_ipv6_prefix: str | None = None
 
+        # Ensure logger emits debug if desired (pytest can still filter via log_cli_level)
+        if self.debug:
+            self.logger.setLevel(logging.DEBUG)
+
+        self.logger.debug(
+            "RadiusTestClient init server=%s auth_port=%s acct_port=%s dict=%s timeout=%.3f retries=%s debug=%s",
+            self.server,
+            self.auth_port,
+            self.acct_port,
+            self.dictionary_path,
+            timeout,
+            retries,
+            self.debug,
+        )
+
     async def send_auth_async(self, command: AuthCommand) -> dict[str, Any]:
         return await asyncio.to_thread(self.send_auth, command)
 
-    async def send_acct_async(self, command: AcctCommand, *, include_last_addresses: bool = True) -> dict[str, Any]:
-        return await asyncio.to_thread(self.send_acct, command, include_last_addresses=include_last_addresses)
+    async def send_acct_async(
+        self, command: AcctCommand, *, include_last_addresses: bool = True
+    ) -> dict[str, Any]:
+        return await asyncio.to_thread(
+            self.send_acct, command, include_last_addresses=include_last_addresses
+        )
 
     def send_auth(self, command: AuthCommand) -> dict[str, Any]:
         """Send Access-Request and return request/reply dict."""
         req = self.client.CreateAuthPacket(code=1)  # Access-Request
+
         request_dump: dict[str, Any] = {
             "code": req.code,
             "id": req.id,
@@ -155,7 +181,19 @@ class RadiusTestClient:
 
         try:
             req.authenticator = req.CreateAuthenticator()
+
+            self._log_request(
+                "Access-Request",
+                request_dump,
+                target=(self.server, self.auth_port),
+            )
+
+            start = time.perf_counter()
             reply = self.client.SendPacket(req)
+            rtt_ms = (time.perf_counter() - start) * 1000.0
+
+            self._log_rtt("Access-Request", rtt_ms)
+
         except PyradTimeoutError as exc:
             raise RadiusNoReplyError("RADIUS server does not reply (timeout)") from exc
         except socket.error as exc:
@@ -167,6 +205,13 @@ class RadiusTestClient:
             raise RadiusNoReplyError("RADIUS server does not reply (None)")
 
         reply_dump = self._dump_reply(reply)
+
+        self._log_reply(
+            reply_dump.get("_name", "Access-Reply"),
+            reply_dump,
+            source=(self.server, self.auth_port),
+        )
+
         self._remember_reply_addresses(reply_dump)
 
         return {"request": request_dump, "reply": reply_dump}
@@ -174,6 +219,7 @@ class RadiusTestClient:
     def send_acct(self, command: AcctCommand, *, include_last_addresses: bool = True) -> dict[str, Any]:
         """Send Accounting-Request and return request/reply dict."""
         req = self.client.CreateAcctPacket(code=4)  # Accounting-Request
+
         request_dump: dict[str, Any] = {
             "code": req.code,
             "id": req.id,
@@ -187,7 +233,9 @@ class RadiusTestClient:
         if include_last_addresses:
             self._set_if_present(req, request_dump, "Framed-IP-Address", self.last_framed_ipv4)
             self._set_if_present(req, request_dump, "Framed-IPv6-Prefix", self.last_framed_ipv6_prefix)
-            self._set_if_present(req, request_dump, "Delegated-IPv6-Prefix", self.last_delegated_ipv6_prefix)
+            self._set_if_present(
+                req, request_dump, "Delegated-IPv6-Prefix", self.last_delegated_ipv6_prefix
+            )
 
         self._set_if_present(req, request_dump, "NAS-IP-Address", command.nas_ip_address)
         self._set_if_present(req, request_dump, "NAS-Port", command.nas_port)
@@ -202,7 +250,18 @@ class RadiusTestClient:
         self._apply_extra_avps(req, request_dump, command.extra_avps)
 
         try:
+            self._log_request(
+                "Accounting-Request",
+                request_dump,
+                target=(self.server, self.acct_port),
+            )
+
+            start = time.perf_counter()
             reply = self.client.SendPacket(req)
+            rtt_ms = (time.perf_counter() - start) * 1000.0
+
+            self._log_rtt("Accounting-Request", rtt_ms)
+
         except PyradTimeoutError as exc:
             raise RadiusNoReplyError("RADIUS server does not reply (timeout)") from exc
         except socket.error as exc:
@@ -214,10 +273,40 @@ class RadiusTestClient:
             raise RadiusNoReplyError("RADIUS server does not reply (None)")
 
         reply_dump = self._dump_reply(reply)
+
+        self._log_reply(
+            reply_dump.get("_name", "Accounting-Reply"),
+            reply_dump,
+            source=(self.server, self.acct_port),
+        )
+
         return {"request": request_dump, "reply": reply_dump}
 
     # -------------------------------
-    # Helpers
+    # Logging helpers
+    # -------------------------------
+
+    def _log_request(self, title: str, data: Mapping[str, Any], *, target: tuple[str, int]) -> None:
+        if not self.debug:
+            return
+        self.logger.debug("→ %s to %s:%s", title, target[0], target[1])
+        for key, value in data.items():
+            self.logger.debug("    %s = %r", key, value)
+
+    def _log_reply(self, title: str, data: Mapping[str, Any], *, source: tuple[str, int]) -> None:
+        if not self.debug:
+            return
+        self.logger.debug("← %s from %s:%s", title, source[0], source[1])
+        for key, value in data.items():
+            self.logger.debug("    %s = %r", key, value)
+
+    def _log_rtt(self, title: str, rtt_ms: float) -> None:
+        if not self.debug:
+            return
+        self.logger.debug("⏱ %s RTT: %.2f ms", title, rtt_ms)
+
+    # -------------------------------
+    # AVP helpers
     # -------------------------------
 
     def _apply_extra_avps(self, req: Any, dump: dict[str, Any], avps: Mapping[str, Any]) -> None:
@@ -281,6 +370,7 @@ class RadiusTestClient:
 # Optional CLI entry for labs
 # -------------------------------
 
+
 def _build_cli() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="pyrad-test-client")
 
@@ -291,6 +381,7 @@ def _build_cli() -> argparse.ArgumentParser:
     p.add_argument("--dictionary", default="conf/dictionary")
     p.add_argument("--timeout", type=float, default=2.0)
     p.add_argument("--retries", type=int, default=1)
+    p.add_argument("--debug", action="store_true", help="Enable debug logging (request/reply + RTT)")
 
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -311,14 +402,24 @@ def _build_cli() -> argparse.ArgumentParser:
     acct.add_argument("--nas-identifier", default=None)
     acct.add_argument("--service-type", default=None)
     acct.add_argument("--acct-session-id", default=None)
-    acct.add_argument("--no-last-addresses", action="store_true", help="Do not inject Framed-* from last auth reply")
+    acct.add_argument(
+        "--no-last-addresses",
+        action="store_true",
+        help="Do not inject Framed-* from last auth reply",
+    )
 
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     args = _build_cli().parse_args(argv)
+
+    if args.debug:
+        logging.getLogger("pyrad_server.test_client").setLevel(logging.DEBUG)
 
     client = RadiusTestClient(
         server=args.server,
@@ -328,6 +429,7 @@ def main(argv: list[str] | None = None) -> int:
         dictionary_path=args.dictionary,
         timeout=args.timeout,
         retries=args.retries,
+        debug=args.debug,
     )
 
     if args.cmd == "auth":

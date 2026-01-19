@@ -1,0 +1,39 @@
+{
+  "name": "pyrad-server devcontainer",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "overrideCommand": false,
+  "runArgs": [
+    "-p", "5711:5711",
+    "-p", "1812:1812/udp",
+    "-p", "1813:1813/udp"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
+      },
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker"
+      ]
+    }
+  },
+  "forwardPorts": [5711, 1812, 1813],
+  "portsAttributes": {
+    "5711": { "label": "pyrad-server API (FastAPI)" },
+    "1812": { "label": "RADIUS Auth (UDP)" },
+    "1813": { "label": "RADIUS Acct (UDP)" }
+  },
+  "mounts": [
+    "source=devcontainer-bash-history,target=/commandhistory,type=volume"
+  ],
+  "containerEnv": {
+    "HISTFILE": "/commandhistory/.bash_history"
+  }
+}

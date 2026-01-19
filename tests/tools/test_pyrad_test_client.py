@@ -68,6 +68,7 @@ def test_acct_request_receives_accounting_response() -> None:
         dictionary_path=dictionary_path,
         timeout=1.5,
         retries=1,
+        debug=True,
     )
 
     session_id = f"pytest:{int(time.time())}"
