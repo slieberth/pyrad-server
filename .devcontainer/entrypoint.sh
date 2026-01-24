@@ -17,14 +17,14 @@ pkill -f "pyrad-server serve" || true
 
 # Default ports match devcontainer.json (API 5711, RADIUS UDP 1812/1813)
 # You can override via environment variables.
-API_PORT="${API_PORT:-5711}"
-AUTH_PORT="${AUTH_PORT:-1812}"
-ACCT_PORT="${ACCT_PORT:-1813}"
-REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
-REDIS_PORT="${REDIS_PORT:-6379}"
-SECRET="${SECRET:-testsecret}"
-CONFIG_PATH="${CONFIG_PATH:-conf/test-config.yml}"
-DICTIONARY_PATH="${DICTIONARY_PATH:-conf/dictionary}"
+export API_PORT="${API_PORT:-5711}"
+export AUTH_PORT="${AUTH_PORT:-1812}"
+export ACCT_PORT="${ACCT_PORT:-1813}"
+export REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
+export REDIS_PORT="${REDIS_PORT:-6379}"
+export SECRET="${SECRET:-testsecret}"
+export CONFIG_PATH="${CONFIG_PATH:-conf/test-config.yml}"
+export DICTIONARY_PATH="${DICTIONARY_PATH:-conf/dictionary}"
 
 pyrad-server serve \
   --config-path "${CONFIG_PATH}" \
