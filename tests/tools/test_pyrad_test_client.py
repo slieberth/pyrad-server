@@ -107,7 +107,10 @@ def test_auth_request_receives_accept_and_reply_message(
         nas_identifier="pytest client 0001",
         service_type=DEFAULT_SERVICE_TYPE,
         acct_session_id=session_id,
-        extra_avps={"Calling-Station-Id": calling_station_id},
+        user_password="CLEARTEXT",
+        extra_avps={
+            "Calling-Station-Id": calling_station_id,
+        },
     )
 
     result = send_auth_or_skip(radius_client, cmd)
@@ -115,6 +118,7 @@ def test_auth_request_receives_accept_and_reply_message(
     reply = result["reply"]
     assert reply["code"] == ACCESS_ACCEPT
     assert reply.get("Reply-Message") == "OK"
+
 
 @pytest.mark.integration
 def test_acct_request_accounting_on(
@@ -142,9 +146,7 @@ def test_acct_request_accounting_on(
             nas_ip_address=DEFAULT_NAS_IP,
             nas_port=0,
             nas_identifier="pytest client 0002",
-            service_type=DEFAULT_SERVICE_TYPE,
             acct_session_id=session_id,
-            extra_avps={"Calling-Station-Id": calling_station_id},
         ),
         include_last_addresses=True,
     )
@@ -193,9 +195,10 @@ def test_acct_request_receives_accounting_response(
             nas_ip_address=DEFAULT_NAS_IP,
             nas_port=0,
             nas_identifier="pytest client 0002",
-            service_type=DEFAULT_SERVICE_TYPE,
             acct_session_id=session_id,
-            extra_avps={"Calling-Station-Id": calling_station_id},
+            extra_avps={
+                "Calling-Station-Id": calling_station_id,
+            },
         ),
         include_last_addresses=True,
     )

@@ -54,10 +54,7 @@ class AcctCommand:
     nas_ip_address: str | None = None
     nas_port: int | None = None
     nas_identifier: str | None = None
-    service_type: str | None = None
     acct_session_id: str | None = None
-
-    user_password: str | None = None
 
     extra_avps: dict[str, Any] = field(default_factory=dict)
 
@@ -174,7 +171,12 @@ class RadiusTestClient:
         self._set_if_present(req, request_dump, "Acct-Session-Id", command.acct_session_id)
 
         if command.user_password is not None:
-            req["User-Password"] = req.PwCrypt(command.user_password)
+            if isinstance(command.user_password, str):
+                password = command.user_password.encode("utf-8")
+            else:
+                password = command.user_password
+            req["User-Password"] = req.PwCrypt(password)
+            self.logger.debug("encrypted User-Password set (%d bytes)", len(req["User-Password"][0]))
             request_dump["User-Password"] = "encrypted"
 
         self._apply_extra_avps(req, request_dump, command.extra_avps)
@@ -240,12 +242,7 @@ class RadiusTestClient:
         self._set_if_present(req, request_dump, "NAS-IP-Address", command.nas_ip_address)
         self._set_if_present(req, request_dump, "NAS-Port", command.nas_port)
         self._set_if_present(req, request_dump, "NAS-Identifier", command.nas_identifier)
-        self._set_if_present(req, request_dump, "Service-Type", command.service_type)
         self._set_if_present(req, request_dump, "Acct-Session-Id", command.acct_session_id)
-
-        if command.user_password is not None:
-            req["User-Password"] = req.PwCrypt(command.user_password)
-            request_dump["User-Password"] = "encrypted"
 
         self._apply_extra_avps(req, request_dump, command.extra_avps)
 
@@ -400,7 +397,6 @@ def _build_cli() -> argparse.ArgumentParser:
     acct.add_argument("--nas-ip-address", default=None)
     acct.add_argument("--nas-port", type=int, default=None)
     acct.add_argument("--nas-identifier", default=None)
-    acct.add_argument("--service-type", default=None)
     acct.add_argument("--acct-session-id", default=None)
     acct.add_argument(
         "--no-last-addresses",
@@ -452,7 +448,6 @@ def main(argv: list[str] | None = None) -> int:
             nas_ip_address=args.nas_ip_address,
             nas_port=args.nas_port,
             nas_identifier=args.nas_identifier,
-            service_type=args.service_type,
             acct_session_id=args.acct_session_id,
         )
         include_last = not args.no_last_addresses

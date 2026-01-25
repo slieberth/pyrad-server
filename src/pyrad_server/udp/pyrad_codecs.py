@@ -34,10 +34,16 @@ class PyradCodec:
             # For Access-Request, use AuthPacket (supports password decrypt helpers etc.)
             if pkt.code == 1:
                 auth = pyrad_packet.AuthPacket(packet=data, secret=secret, dict=dictionary)
-                # Optional: decrypt User-Password if present (store cleartext in packet)
-                if "User-Password" in auth.keys():
-                    encrypted = auth["User-Password"][0]
-                    auth["User-Password"] = auth.PwDecrypt(encrypted)
+
+                # # Optional: decrypt User-Password if present (store cleartext in packet)
+                # values = auth.get("User-Password")
+                # if values:
+                #     encrypted = values[0]
+                #     if isinstance(encrypted, str):
+                #         encrypted = encrypted.encode("utf-8")
+                #     clear = auth.PwDecrypt(encrypted)
+                #     auth["User-Password"] = [clear]
+
                 return auth
 
             return pkt
