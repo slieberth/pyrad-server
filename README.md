@@ -123,7 +123,7 @@ pytest
 ### E2E Testing for pyrad releases:
 
 > [!IMPORTANT]
-> One of the use cases for this repository is end-to-end testing of the pyrad library.
+> One of the use cases for this repository is end-to-end testing of the pyrad library in a fully reproducible devcontainer environment.
 
 Once the devcontainer is established, it is possible to run the client pytest suite and monitor the RADIUS packets to and from the server using tcpdump.
 
@@ -170,6 +170,13 @@ tcpdump: listening on lo, link-type EN10MB (Ethernet), snapshot length 262144 by
             0x0010:  745f 7265 6365 6976 6573 5f61 6363 6570
             0x0020:  745f 616e 645f 7265 706c 795f 6d65 7373
             0x0030:  6167 65
+04:04:26.764080 IP (tos 0x0, ttl 64, id 36269, offset 0, flags [DF], proto UDP (17), length 58)
+    localhost.radius > localhost.37268: [bad udp cksum 0xfe39 -> 0x0ef4!] RADIUS, length: 30
+        Access-Accept (2), id: 0x03, Authenticator: 841da7cc18db2dfe7c50ba0c82dcb880
+          Reply-Message Attribute (18), length: 4, Value: OK
+            0x0000:  4f4b
+          Framed-IP-Address Attribute (8), length: 6, Value: 10.0.0.15
+            0x0000:  0a00 000f
 ```
 
 
