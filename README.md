@@ -120,6 +120,58 @@ pytest
 
 ---
 
+### E2E Testing for pyrad releases:
+
+> [!IMPORTANT]
+> One of the use cases for this repository is end-to-end testing of the pyrad library.
+
+Once the devcontainer is established, it is possible to run the client pytest suite and monitor the RADIUS packets to and from the server using tcpdump.
+
+```
+vscode ➜ /workspaces/pyrad-server (main) $ pytest tests/tools/test_pyrad_test_client.py -vvv -s 
+=== test session starts ============================================================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspaces/pyrad-server
+configfile: pyproject.toml
+plugins: anyio-4.12.1, cov-7.0.0
+collected 3 items                                                                                                                           
+
+tests/tools/test_pyrad_test_client.py::test_auth_request_receives_accept_and_reply_message PASSED
+tests/tools/test_pyrad_test_client.py::test_acct_request_accounting_on PASSED
+tests/tools/test_pyrad_test_client.py::test_acct_request_receives_accounting_response PASSED
+
+===3 passed in 0.02s =============================================================
+```
+
+tcpdump monitoring:
+```
+vscode ➜ /workspaces/pyrad-server (main) $ sudo tcpdump -i lo -vvv 'udp port 1812 or udp port 1813'
+tcpdump: listening on lo, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+04:04:26.763724 IP (tos 0x0, ttl 64, id 36268, offset 0, flags [DF], proto UDP (17), length 177)
+    localhost.37268 > localhost.radius: [bad udp cksum 0xfeb0 -> 0x7b40!] RADIUS, length: 149
+        Access-Request (1), id: 0x03, Authenticator: 7afe3cc8bb42f6da6c188f5508ef8353
+          User-Name Attribute (1), length: 7, Value: alice
+            0x0000:  616c 6963 65
+          NAS-IP-Address Attribute (4), length: 6, Value: 192.168.1.10
+            0x0000:  c0a8 010a
+          NAS-Port Attribute (5), length: 6, Value: 1
+            0x0000:  0000 0001
+          NAS-Identifier Attribute (32), length: 20, Value: pytest server 0001
+            0x0000:  7079 7465 7374 2073 6572 7665 7220 3030
+            0x0010:  3031
+          Acct-Session-Id Attribute (44), length: 19, Value: pytest:1769313866
+            0x0000:  7079 7465 7374 3a31 3736 3933 3133 3836
+            0x0010:  36
+          User-Password Attribute (2), length: 18, Value: 
+            0x0000:  395e 12df 27dc 4653 4435 e1c6 9e7a dc73
+          Calling-Station-Id Attribute (31), length: 53, Value: test_auth_request_receives_accept_and_reply_message
+            0x0000:  7465 7374 5f61 7574 685f 7265 7175 6573
+            0x0010:  745f 7265 6365 6976 6573 5f61 6363 6570
+            0x0020:  745f 616e 645f 7265 706c 795f 6d65 7373
+            0x0030:  6167 65
+```
+
 
 ## Development with VS Code Devcontainer
 
@@ -130,10 +182,10 @@ Features:
 
 - Ubuntu-based development container
 - Redis running inside the container
+- E2E Testing for pyrad library
 - RADIUS UDP ports exposed (1812 / 1813)
 - REST API exposed on port 5711
 - Persistent shell history
-- Identical environment for local development and CI
 
 Open the repository in VS Code and select:
 “Reopen in Container”

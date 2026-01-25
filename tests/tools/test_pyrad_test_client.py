@@ -52,8 +52,7 @@ def radius_env() -> RadiusEnvConfig:
 @pytest.fixture
 def calling_station_id(request: FixtureRequest) -> str:
     """Use pytest's nodeid so packets can be correlated in server logs/tcpdump."""
-    return request.node.nodeid
-
+    return request.node.name
 
 @pytest.fixture
 def session_id() -> str:
@@ -103,9 +102,8 @@ def test_auth_request_receives_accept_and_reply_message(
     cmd = AuthCommand(
         user_name=DEFAULT_USER,
         nas_ip_address=DEFAULT_NAS_IP,
-        nas_port=0,
-        nas_identifier="pytest client 0001",
-        service_type=DEFAULT_SERVICE_TYPE,
+        nas_port=1,
+        nas_identifier="pytest server 0001",
         acct_session_id=session_id,
         user_password="CLEARTEXT",
         extra_avps={
@@ -145,7 +143,7 @@ def test_acct_request_accounting_on(
             acct_status_type="Accounting-On",
             nas_ip_address=DEFAULT_NAS_IP,
             nas_port=0,
-            nas_identifier="pytest client 0002",
+            nas_identifier="pytest server 0002",
             acct_session_id=session_id,
         ),
         include_last_addresses=True,
@@ -180,8 +178,7 @@ def test_acct_request_receives_accounting_response(
             user_name=DEFAULT_USER,
             nas_ip_address=DEFAULT_NAS_IP,
             nas_port=0,
-            nas_identifier="pytest client 0002",
-            service_type=DEFAULT_SERVICE_TYPE,
+            nas_identifier="pytest server 0002",
             acct_session_id=session_id,
             extra_avps={"Calling-Station-Id": calling_station_id},
         ),
@@ -191,10 +188,42 @@ def test_acct_request_receives_accounting_response(
         client,
         AcctCommand(
             user_name=DEFAULT_USER,
+            acct_status_type="Start",
+            nas_ip_address=DEFAULT_NAS_IP,
+            nas_port=0,
+            nas_identifier="pytest server 0002",
+            acct_session_id=session_id,
+            extra_avps={
+                "Calling-Station-Id": calling_station_id,
+            },
+        ),
+        include_last_addresses=True,
+    )
+
+    acct_result = send_acct_or_skip(
+        client,
+        AcctCommand(
+            user_name=DEFAULT_USER,
             acct_status_type="Interim-Update",
             nas_ip_address=DEFAULT_NAS_IP,
             nas_port=0,
-            nas_identifier="pytest client 0002",
+            nas_identifier="pytest server 0002",
+            acct_session_id=session_id,
+            extra_avps={
+                "Calling-Station-Id": calling_station_id,
+            },
+        ),
+        include_last_addresses=True,
+    )
+
+    acct_result = send_acct_or_skip(
+        client,
+        AcctCommand(
+            user_name=DEFAULT_USER,
+            acct_status_type="Stop",
+            nas_ip_address=DEFAULT_NAS_IP,
+            nas_port=0,
+            nas_identifier="pytest server 0002",
             acct_session_id=session_id,
             extra_avps={
                 "Calling-Station-Id": calling_station_id,
