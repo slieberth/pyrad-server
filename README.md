@@ -10,6 +10,9 @@ This project is **not intended to replace production-grade RADIUS servers** such
 FreeRADIUS, but to provide a controllable and inspectable environment for testing
 clients, workflows, and integrations.
 
+> [!NOTE]
+> One of the use cases for this repository is end-to-end testing of the pyrad library in a fully reproducible devcontainer environment.
+
 ---
 
 ## Features
@@ -121,9 +124,6 @@ pytest
 ---
 
 ### E2E Testing for pyrad releases:
-
-> [!IMPORTANT]
-> One of the use cases for this repository is end-to-end testing of the pyrad library in a fully reproducible devcontainer environment.
 
 Once the devcontainer is established, it is possible to run the client pytest suite and monitor the RADIUS packets to and from the server using tcpdump.
 
