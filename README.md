@@ -13,7 +13,24 @@ clients, workflows, and integrations.
 > [!NOTE]
 > One of the use cases for this repository is end-to-end testing of the pyrad library in a fully reproducible devcontainer environment.
 
----
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Installation (Development)](#installation-development)
+- [Running the Server](#running-the-server)
+- [Configuration](#configuration)
+  - [Configuration Structure Overview](#configuration-structure-overview)
+  - [Address Pools](#address-pools)
+  - [Reply Definitions](#reply-definitions)
+  - [Pool Match Rules](#pool-match-rules)
+  - [Reply Match Rules](#reply-match-rules)
+  - [Redis Dialog Storage](#redis-dialog-storage)
+- [RADIUS Test Client](#radius-test-client)
+  - [Client Debug Output](#client-debug-output)
+- [Testing](#testing)
+  - [E2E Testing for pyrad releases](#e2e-testing-for-pyrad-releases)
+- [Development with VS Code Devcontainer](#development-with-vs-code-devcontainer)
+- [License](#license)
+
 
 ## Features
 
@@ -77,7 +94,108 @@ pyrad-server serve \
 
 ## Configuration
 
-Configuration is provided via YAML.  
+The `pyrad-server` configuration is defined in a single YAML file and is organized into the following sections:
+
+- **`address_pools`**
+   Defines IPv4/IPv6 address pools used for dynamic address assignment.
+- **`reply_definitions`**
+   Predefined RADIUS replies (e.g. Access-Accept, Accounting-Response) with explicit response codes and attributes.
+- **`pool_match_rules`**
+   Rule-based mapping of incoming requests to address pools.
+   Rules are evaluated in order (first match wins).
+- **`reply_match_rules`**
+   Determines which reply definition is selected for a given request, grouped by RADIUS packet type.
+- **`redis_storage`**
+   Configuration for storing and correlating RADIUS dialog state in Redis across authentication, accounting, and control flows.
+
+---
+
+### Address Pools
+
+```yaml
+address_pools:
+  pool1:
+    shuffle: false
+    ipv4:
+      - 10.0.0.0/24
+  pool2:
+    shuffle: false
+    ipv4:
+      - 10.0.1.0/24
+```
+
+Defines IP address pools that can be used for dynamic address assignment
+(e.g. `Framed-IP-Address`).
+
+---
+
+### Reply Definitions
+
+```yaml
+reply_definitions:
+  auth:
+    ok1:
+      code: 2
+      attributes:
+        Reply-Message: "OK for alice"
+        Framed-IP-Address: "-> fromPool"
+    ok2:
+      code: 2
+      attributes:
+        Reply-Message: "OK for bob"
+        Framed-IP-Address: "-> fromPool"
+
+  acct:
+    acct_ok:
+      code: 5
+      attributes: {}
+```
+
+---
+
+### Pool Match Rules
+
+```yaml
+pool_match_rules:
+  - pool1:
+      - User-Name: "alice"
+  - pool2:
+      - User-Name: "bob"
+```
+
+---
+
+### Reply Match Rules
+
+```yaml
+reply_match_rules:
+  auth:
+    - ok1:
+        - User-Name: "alice"
+    - ok2:
+        - User-Name: "bob"
+
+  acct:
+    - acct_ok: []
+```
+
+---
+
+### Redis Dialog Storage
+
+```yaml
+redis_storage:
+  prefix: "pyrad-server::"
+  auth:
+    - Acct-Session-Id
+  acct:
+    - Acct-Session-Id
+  coa:
+    - Acct-Session-Id
+  disc:
+    - Acct-Session-Id
+```
+
 See `conf/test-config.yml` for a minimal working example.
 
 ---

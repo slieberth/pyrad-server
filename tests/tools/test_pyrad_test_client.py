@@ -115,7 +115,7 @@ def test_auth_request_receives_accept_and_reply_message(
 
     reply = result["reply"]
     assert reply["code"] == ACCESS_ACCEPT
-    assert reply.get("Reply-Message") == "OK"
+    assert reply.get("Reply-Message") == "OK for alice"
 
 
 @pytest.mark.integration

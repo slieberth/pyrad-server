@@ -6,16 +6,25 @@ address_pools:
     shuffle: false
     ipv4:
       - 10.0.0.0/24
+  pool2:
+    shuffle: false
+    ipv4:
+      - 10.0.1.0/24
 
 # ------------------------------------------------------------
 # Reply definitions
 # ------------------------------------------------------------
 reply_definitions:
   auth:
-    ok:
+    ok1:
       code: 2   # Access-Accept
       attributes:
-        Reply-Message: "OK"
+        Reply-Message: "OK for alice"
+        Framed-IP-Address: "-> fromPool"
+    ok2:
+      code: 2   # Access-Accept
+      attributes:
+        Reply-Message: "OK for bob"
         Framed-IP-Address: "-> fromPool"
 
   acct:
@@ -29,29 +38,32 @@ reply_definitions:
 pool_match_rules:
   - pool1:
       - User-Name: "alice"
+  - pool2:
+      - User-Name: "bob"
 
 # ------------------------------------------------------------
 # Reply match rules
 # ------------------------------------------------------------
 reply_match_rules:
   auth:
-    - ok:
+    - ok1:
         - User-Name: "alice"
+    - ok2:
+        - User-Name: "bob"
 
   acct:
-    - acct_ok:
-        - User-Name: "alice"
+    - acct_ok: []  # send always, regardless of attributes
 
 # ------------------------------------------------------------
 # Redis dialog storage
 # ------------------------------------------------------------
 redis_storage:
-  prefix: "tE4.radiusServer."
+  prefix: "pyrad-server::"
   auth:
-    - User-Name
+    - Acct-Session-Id
   acct:
-    - User-Name
+    - Acct-Session-Id
   coa:
-    - User-Name
+    - Acct-Session-Id
   disc:
-    - User-Name
+    - Acct-Session-Id

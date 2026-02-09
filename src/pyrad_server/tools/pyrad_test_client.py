@@ -170,15 +170,6 @@ class RadiusTestClient:
         self._set_if_present(req, request_dump, "Service-Type", command.service_type)
         self._set_if_present(req, request_dump, "Acct-Session-Id", command.acct_session_id)
 
-        if command.user_password is not None:
-            if isinstance(command.user_password, str):
-                password = command.user_password.encode("utf-8")
-            else:
-                password = command.user_password
-            req["User-Password"] = req.PwCrypt(password)
-            self.logger.debug("encrypted User-Password set (%d bytes)", len(req["User-Password"][0]))
-            request_dump["User-Password"] = "encrypted"
-
         self._apply_extra_avps(req, request_dump, command.extra_avps)
 
         try:
