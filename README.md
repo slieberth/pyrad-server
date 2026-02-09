@@ -96,40 +96,26 @@ pyrad-server serve \
 
 The `pyrad-server` configuration is defined in a single YAML file and is organized into the following sections:
 
-- **`address_pools`**
-   Defines IPv4/IPv6 address pools used for dynamic address assignment.
 - **`reply_definitions`**
    Predefined RADIUS replies (e.g. Access-Accept, Accounting-Response) with explicit response codes and attributes.
+- **`reply_match_rules`**
+   Determines which reply definition is selected for a given request, grouped by RADIUS packet type.
+- **`address_pools`**
+   Defines IPv4/IPv6 address pools used for dynamic address assignment.
 - **`pool_match_rules`**
    Rule-based mapping of incoming requests to address pools.
    Rules are evaluated in order (first match wins).
-- **`reply_match_rules`**
-   Determines which reply definition is selected for a given request, grouped by RADIUS packet type.
 - **`redis_storage`**
    Configuration for storing and correlating RADIUS dialog state in Redis across authentication, accounting, and control flows.
 
 ---
 
-### Address Pools
-
-```yaml
-address_pools:
-  pool1:
-    shuffle: false
-    ipv4:
-      - 10.0.0.0/24
-  pool2:
-    shuffle: false
-    ipv4:
-      - 10.0.1.0/24
-```
-
-Defines IP address pools that can be used for dynamic address assignment
-(e.g. `Framed-IP-Address`).
-
----
 
 ### Reply Definitions
+
+Reply definitions describe complete, explicit RADIUS responses, including the response code and all returned attributes.
+They are grouped by RADIUS packet type (e.g. authentication, accounting) and serve as reusable response templates.
+Dynamic placeholders (such as values resolved from address pools) are substituted when the reply is generated.
 
 ```yaml
 reply_definitions:
@@ -150,22 +136,13 @@ reply_definitions:
       code: 5
       attributes: {}
 ```
-
----
-
-### Pool Match Rules
-
-```yaml
-pool_match_rules:
-  - pool1:
-      - User-Name: "alice"
-  - pool2:
-      - User-Name: "bob"
-```
-
 ---
 
 ### Reply Match Rules
+
+Reply match rules select the appropriate reply definition for an incoming RADIUS request.
+Rules are evaluated per RADIUS packet type and follow a strict first-match-wins approach.
+Empty match rules can be used to define default replies that are always sent if no other rule matches.
 
 ```yaml
 reply_match_rules:
@@ -181,7 +158,50 @@ reply_match_rules:
 
 ---
 
+### Address Pools
+
+Address pools define ranges of IP addresses that can be dynamically assigned to RADIUS clients, for example via the Framed-IP-Address attribute.
+Each pool may contain one or more IPv4 (and potentially IPv6) CIDR ranges and can be configured to allocate addresses sequentially or randomly.
+Pools are selected based on matching rules and are resolved at reply-generation time.
+
+```yaml
+address_pools:
+  pool1:
+    shuffle: false
+    ipv4:
+      - 10.0.0.0/24
+  pool2:
+    shuffle: false
+    ipv4:
+      - 10.0.1.0/24
+```
+
+Defines IP address pools that can be used for dynamic address assignment
+(e.g. `Framed-IP-Address`).
+
+---
+
+### Pool Match Rules
+
+Pool match rules determine which address pool is used for a given incoming request.
+Each rule consists of a set of attribute/value matches and is evaluated in order, with the first matching rule being applied.
+This allows deterministic mapping of users, sessions, or other attributes to specific address pools.
+
+```yaml
+pool_match_rules:
+  - pool1:
+      - User-Name: "alice"
+  - pool2:
+      - User-Name: "bob"
+```
+
+---
+
 ### Redis Dialog Storage
+
+The Redis storage configuration defines how RADIUS dialog state is persisted and correlated across multiple request/response phases.
+For each RADIUS packet type, a set of attributes is specified that together form the Redis key.
+This enables tracking of authentication, accounting, and control flows belonging to the same logical session.
 
 ```yaml
 redis_storage:
