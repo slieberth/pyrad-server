@@ -18,7 +18,7 @@ clients, workflows, and integrations.
 - [Installation (Development)](#installation-development)
 - [Running the Server](#running-the-server)
 - [Configuration](#configuration)
-  - [Configuration Structure Overview](#configuration-structure-overview)
+  - [Configuration Structure Overview](#configuration)
   - [Address Pools](#address-pools)
   - [Reply Definitions](#reply-definitions)
   - [Pool Match Rules](#pool-match-rules)
