@@ -21,11 +21,6 @@ COPY pyproject.toml README*.md LICENSE.rst ./
 COPY src ./src
 RUN pip install --no-cache-dir --break-system-packages -e ".[dev]"
 
-# (optional) install your pyrad fork
-# ARG GIT_REF=developmnet-slieberth
-# RUN pip install --no-cache-dir --break-system-packages \
-#     git+https://github.com/slieberth/pyrad.git@${GIT_REF}
-
 # Entrypoint
 COPY .devcontainer/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
